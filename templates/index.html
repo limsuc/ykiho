@@ -9,22 +9,13 @@
       tailwind.config = {
         theme: {
           extend: {
-            fontFamily: {
-              sans: ["Pretendard", "system-ui", "sans-serif"],
-              mono: ["JetBrains Mono", "monospace"],
-            },
-            colors: {
-              accent: "#2563eb",
-              bizno: "#059669",
-            },
+            colors: { accent: "#2563eb", bizno: "#059669" },
           },
         },
       };
     </script>
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-    <style>
-      body { font-family: "Pretendard", sans-serif; }
-    </style>
+    <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>body { font-family: "Pretendard", sans-serif; }</style>
   </head>
   <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
     <div class="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
@@ -37,7 +28,7 @@
         <form id="search-form" class="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div class="w-full sm:w-40">
             <label for="sido" class="mb-1.5 block text-sm font-medium text-slate-700">지역</label>
-            <select id="sido" name="sido" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:ring-2 focus:ring-accent/20 transition">
+            <select id="sido" name="sido" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:ring-2 focus:ring-accent/20">
               <option value="">전체 지역</option>
               <option value="110000">서울</option>
               <option value="310000">경기</option>
@@ -61,9 +52,9 @@
 
           <div class="min-w-0 flex-1">
             <label for="q" class="mb-1.5 block text-sm font-medium text-slate-700">병원명</label>
-            <input id="q" name="q" type="search" placeholder="병원명을 입력하세요" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:ring-2 focus:ring-accent/20 transition" />
+            <input id="q" name="q" type="search" placeholder="병원명을 입력하세요" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:ring-2 focus:ring-accent/20" />
           </div>
-          <button type="submit" class="rounded-xl bg-accent px-8 py-3 font-semibold text-white shadow-lg shadow-accent/20 hover:bg-blue-600 transition">검색</button>
+          <button type="submit" class="rounded-xl bg-accent px-8 py-3 font-semibold text-white shadow-lg hover:bg-blue-600 transition">검색</button>
         </form>
 
         <div class="mt-4 flex items-center gap-3">
@@ -76,7 +67,7 @@
         <div id="detail-card" class="mt-8 hidden rounded-2xl border border-blue-100 bg-blue-50/50 p-6 shadow-sm">
           <div class="flex items-center justify-between border-b border-blue-100 pb-4 mb-4">
             <h2 id="detail-name" class="text-2xl font-bold text-slate-900">병원명</h2>
-            <button onclick="closeDetail()" class="text-slate-400 hover:text-slate-600">닫기 ✕</button>
+            <button onclick="closeDetail()" class="text-slate-400 hover:text-slate-600 font-bold">닫기 ✕</button>
           </div>
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="rounded-xl bg-white p-5 border border-slate-100 shadow-sm">
@@ -88,17 +79,15 @@
             </div>
             <div class="rounded-xl bg-white p-5 border border-slate-100 shadow-sm">
               <h3 class="text-sm font-bold text-bizno mb-3">📄 사업자 정보 (Bizno)</h3>
-              <div id="bizno-content">
-                <p class="text-sm text-slate-500 mb-1">사업자번호</p>
-                <p id="detail-bizno" class="font-mono text-xl font-bold text-slate-900 mb-3">검색 전</p>
-                <p class="text-sm text-slate-500 mb-1">대표자명</p>
-                <p id="detail-ceo" class="text-sm font-bold text-slate-900">-</p>
-              </div>
+              <p class="text-sm text-slate-500 mb-1">사업자번호</p>
+              <p id="detail-bizno" class="font-mono text-xl font-bold text-slate-900 mb-3">검색 전</p>
+              <p class="text-sm text-slate-500 mb-1">대표자명</p>
+              <p id="detail-ceo" class="text-sm font-bold text-slate-900">-</p>
             </div>
           </div>
         </div>
 
-        <div id="status" class="mt-6 hidden text-sm font-medium"></div>
+        <div id="status" class="mt-6 hidden text-sm font-medium p-3 rounded-lg"></div>
 
         <div class="mt-6 overflow-hidden rounded-xl border border-slate-200">
           <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
@@ -123,10 +112,10 @@
       const detailCard = document.getElementById("detail-card");
 
       function setStatus(kind, message) {
-        statusEl.classList.remove("hidden", "text-red-600", "text-emerald-700", "text-slate-600");
-        if (!message) { statusEl.classList.add("hidden"); return; }
+        statusEl.className = `mt-6 text-sm font-medium p-3 rounded-lg ${
+          kind === "error" ? "bg-red-50 text-red-600" : (kind === "ok" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600")
+        }`;
         statusEl.textContent = message;
-        statusEl.classList.add(kind === "error" ? "text-red-600" : (kind === "ok" ? "text-emerald-700" : "text-slate-600"));
         statusEl.classList.remove("hidden");
       }
 
@@ -134,50 +123,84 @@
         detailCard.classList.remove("hidden");
         document.getElementById("detail-name").textContent = h.yadmNm;
         document.getElementById("detail-addr").textContent = h.addr;
-        document.getElementById("detail-ykiho").textContent = h.yoyangNo8 || h.ykiho || "조회 중...";
-        
-        // 비즈노 데이터 초기화
+        document.getElementById("detail-ykiho").textContent = h.yoyangNo8 || h.ykiho || "조회 불가";
         document.getElementById("detail-bizno").textContent = "검색 중 ⏳";
         document.getElementById("detail-ceo").textContent = "조회 중 ⏳";
 
         try {
           const res = await fetch(`/api/bizno?q=${encodeURIComponent(h.yadmNm)}`);
-          
-          // 1. 서버 주소가 아예 없을 때 (Vercel 배포 문제)
-          if (res.status === 404) {
-            throw new Error("app.py가 Vercel에 제대로 업데이트되지 않았습니다. (404 에러)");
-          }
-
           const data = await res.json();
           
-          // 2. 파이썬에서 에러 메시지를 보냈을 때
-          if (data.error) {
-            throw new Error(data.error);
-          }
+          if (data.error) throw new Error(data.error);
 
           if (data.items && data.items.length > 0) {
-            // 주소 기반 매칭 (두 번째 단어 비교)
             const cityKeyword = h.addr.split(" ")[1] || "";
             let match = data.items[0];
             for (const item of data.items) {
               if (item.address && item.address.includes(cityKeyword)) { match = item; break; }
             }
-            document.getElementById("detail-bizno").textContent = match.bno;
-            document.getElementById("detail-ceo").textContent = match.ceo;
+            document.getElementById("detail-bizno").textContent = match.bno || "정보 없음";
+            document.getElementById("detail-ceo").textContent = match.ceo || "정보 없음";
           } else {
-            document.getElementById("detail-bizno").textContent = "정보 없음";
+            document.getElementById("detail-bizno").textContent = "결과 없음";
             document.getElementById("detail-ceo").textContent = "-";
           }
-        } catch (error) {
-          console.error("비즈노 에러:", error);
-          document.getElementById("detail-bizno").textContent = "에러 발생";
-          document.getElementById("detail-ceo").textContent = "에러 발생";
-          
-          // 🚨 에러의 진짜 이유를 화면 상단 팝업창으로 띄워줍니다!
-          alert("사업자 정보 연동 실패 이유:\n" + error.message);
+        } catch (err) {
+          document.getElementById("detail-bizno").textContent = "오류 발생";
+          document.getElementById("detail-ceo").textContent = "오류 발생";
+          console.error(err);
         }
         detailCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+
+      function closeDetail() { detailCard.classList.add("hidden"); }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const q = document.getElementById("q").value.trim();
+        const sido = document.getElementById("sido").value;
+        const resolveHira = document.getElementById("resolve-hira").checked ? "1" : "0";
+
+        if (!q) { setStatus("error", "검색어를 입력하세요."); return; }
+
+        setStatus("neutral", "데이터를 불러오는 중...");
+        tbody.innerHTML = "";
+        document.getElementById("empty").classList.add("hidden");
+        detailCard.classList.add("hidden");
+        
+        try {
+          const params = new URLSearchParams({ q, sido, resolveHira });
+          const res = await fetch(`/api/hospitals?${params.toString()}`);
+          const data = await res.json();
+
+          if (data.error) {
+            setStatus("error", `서버 오류: ${data.error}`);
+            return;
+          }
+
+          if (!data.hospitals || data.hospitals.length === 0) {
+            document.getElementById("empty").classList.remove("hidden");
+            setStatus("ok", "검색 결과가 없습니다.");
+            return;
+          }
+
+          data.hospitals.forEach((h) => {
+            const tr = document.createElement("tr");
+            tr.className = "cursor-pointer hover:bg-slate-50 transition";
+            tr.onclick = () => showDetail(h);
+            tr.innerHTML = `
+              <td class="px-6 py-4 font-medium text-slate-900">${h.yadmNm}</td>
+              <td class="px-6 py-4 text-slate-500">${h.addr}</td>
+              <td class="px-6 py-4 font-mono text-accent font-bold">${h.yoyangNo8 || h.ykiho || '—'}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+          setStatus("ok", `총 ${data.hospitals.length}건을 찾았습니다. 병원을 클릭해 상세 정보를 확인하세요.`);
+        } catch (err) {
+          setStatus("error", "데이터 조회 중 네트워크 오류가 발생했습니다.");
+          console.error(err);
+        }
+      });
     </script>
   </body>
 </html>

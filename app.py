@@ -1,9 +1,15 @@
-import os
-import time
 import json
+import os
+from pathlib import Path
+from typing import Any
+
 import requests
-from flask import Flask, jsonify, render_template, request
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from flask import Flask, jsonify, render_template, request
+
+_BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(_BASE_DIR / ".env")
 
 app = Flask(__name__)
 
@@ -11,81 +17,114 @@ HOSP_LIST_URL = "https://apis.data.go.kr/B551182/hospInfoServicev2/getHospBasisL
 HIRA_HOSP_DETAIL_URL = "https://www.hira.or.kr/ra/hosp/hospInfoAjax.do"
 BIZNO_API_KEY = "IcSmJ3zQEcKm20SZlTBoIwdN"
 
-# 심평원 상세 페이지에서 평문 요양기호 추출
-def fetch_ykiho_from_hira(enc_ykiho):
-    try:
-        headers = {"User-Agent": "Mozilla/5.0"}
-        resp = requests.get(HIRA_HOSP_DETAIL_URL, params={"ykiho": enc_ykiho}, headers=headers, timeout=10)
-        soup = BeautifulSoup(resp.text, "html.parser")
-        inp = soup.find("input", {"id": "ykiho"})
-        return inp.get("value") if inp else None
-    except:
+HIRA_REQUEST_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    )
+}
+
+# 심평원 상세 페이지 크롤링 함수
+def fetch_plain_yoyang_from_hira_html(enc_ykiho: str) -> str | None:
+    if not enc_ykiho or not str(enc_ykiho).strip():
         return None
+    try:
+        resp = requests.get(HIRA_HOSP_DETAIL_URL, params={"ykiho": enc_ykiho}, headers=HIRA_REQUEST_HEADERS, timeout=10)
+        soup = BeautifulSoup(resp.text, "html.parser")
+        inp = soup.find("input", attrs={"id": "ykiho"})
+        if inp:
+            return str(inp.get("value")).strip() or None
+    except:
+        pass
+    return None
+
+# 공공데이터 API 에러 방어용 파싱 함수
+def _normalize_items(items_block: Any) -> list[dict[str, Any]]:
+    if items_block is None or items_block == "":
+        return []
+    if isinstance(items_block, dict):
+        item = items_block.get("item")
+    else:
+        item = None
+    if item is None:
+        return []
+    if isinstance(item, list):
+        return [x for x in item if isinstance(x, dict)]
+    if isinstance(item, dict):
+        return [item]
+    return []
+
+def _extract_hospital_row(item: dict[str, Any]) -> dict[str, str | None]:
+    ykiho = item.get("ykiho")
+    yadm_nm = item.get("yadmNm")
+    addr = item.get("addr")
+    return {
+        "ykiho": str(ykiho).strip() if ykiho else None,
+        "yadmNm": str(yadm_nm).strip() if yadm_nm else None,
+        "addr": str(addr).strip() if addr else None,
+    }
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
-@app.get("/api/hospitals")
+@app.route("/api/hospitals", methods=["GET"])
 def api_hospitals():
     q = request.args.get("q", "").strip()
-    sido = request.args.get("sido", "").strip()
-    resolve_hira = request.args.get("resolveHira") == "1"
+    sido_code = request.args.get("sido", "").strip()
+    
+    if not q:
+        return jsonify({"error": "검색어(q)를 입력해 주세요.", "hospitals": []}), 400
 
-    service_key = os.environ.get("DATA_GO_KR_SERVICE_KEY", "").strip()
+    service_key = os.environ.get("DATA_GO_KR_SERVICE_KEY", "").strip().lstrip("\ufeff").strip('"').strip("'")
     
     params = {
         "serviceKey": service_key,
         "pageNo": 1,
-        "numOfRows": 30,
+        "numOfRows": 50,
         "yadmNm": q,
-        "_type": "json"
+        "_type": "json",
     }
-    if sido: params["sidoCd"] = sido
+    if sido_code:
+        params["sidoCd"] = sido_code
 
     try:
-        resp = requests.get(HOSP_LIST_URL, params=params, timeout=20)
+        resp = requests.get(HOSP_LIST_URL, params=params, timeout=30)
         data = resp.json()
-        items = data.get("response", {}).get("body", {}).get("items", {}).get("item", [])
-        if isinstance(items, dict): items = [items]
-
-        hospitals = []
-        for it in items:
-            h = {
-                "yadmNm": it.get("yadmNm"),
-                "addr": it.get("addr"),
-                "ykiho": it.get("ykiho"),
-                "yoyangNo8": None
-            }
-            if resolve_hira:
-                h["yoyangNo8"] = fetch_ykiho_from_hira(it.get("ykiho"))
-            hospitals.append(h)
-
-        return jsonify({"hospitals": hospitals})
     except Exception as e:
-        return jsonify({"error": str(e), "hospitals": []}), 500
+        return jsonify({"error": f"심평원 API 에러: {str(e)}", "hospitals": []}), 502
 
-@app.get("/api/bizno")
+    body = (data.get("response") or {}).get("body") or {}
+    items_block = body.get("items")
+    raw_items = _normalize_items(items_block)
+    hospitals = [_extract_hospital_row(it) for it in raw_items]
+
+    # 요양기호 크롤링 옵션
+    resolve_hira = request.args.get("resolveHira", "0").strip() == "1"
+    
+    for h in hospitals:
+        if resolve_hira and h.get("ykiho"):
+            h["yoyangNo8"] = fetch_plain_yoyang_from_hira_html(h["ykiho"])
+        else:
+            h["yoyangNo8"] = None
+
+    return jsonify({"hospitals": hospitals, "totalCount": body.get("totalCount")})
+
 @app.route("/api/bizno", methods=["GET"])
 def api_bizno():
     q = request.args.get("q", "").strip()
     if not q:
         return jsonify({"error": "검색어가 없습니다.", "items": []}), 400
 
-    BIZNO_API_KEY = "IcSmJ3zQEcKm20SZlTBoIwdN"
     params = {"key": BIZNO_API_KEY, "gb": 3, "q": q, "type": "json"}
-    
     try:
-        # 비즈노 서버가 봇(Bot)으로 인식하지 않도록 브라우저 정보 추가
+        # 비즈노 로봇 차단 방어
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         resp = requests.get("https://bizno.net/api/fapi", params=params, headers=headers, timeout=10)
-        
-        try:
-            data = resp.json()
-            return jsonify(data)
-        except ValueError:
-            # 비즈노가 JSON이 아닌 텍스트(예: "유효하지 않은 키입니다")를 보냈을 때
-            return jsonify({"error": f"비즈노 거절 메시지: {resp.text[:50]}", "items": []}), 502
-            
+        data = resp.json()
+        return jsonify(data)
     except Exception as e:
-        return jsonify({"error": f"서버 내부 에러: {str(e)}", "items": []}), 500
+        return jsonify({"error": f"비즈노 서버 에러: {str(e)}", "items": []}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)
