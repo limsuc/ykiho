@@ -3,48 +3,41 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>요양기관번호 검색기</title>
+    <title>병의원 통합 검색기 (CSO용)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
             fontFamily: {
-              sans: ["DM Sans", "Pretendard", "system-ui", "sans-serif"],
-              mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+              sans: ["Pretendard", "system-ui", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
             },
             colors: {
-              ink: { 950: "#0c1222", 700: "#3d4a63", 500: "#64748b" },
-              mist: "#f1f5f9",
               accent: "#2563eb",
+              bizno: "#059669",
             },
           },
         },
       };
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+      body { font-family: "Pretendard", sans-serif; }
+    </style>
   </head>
-  <body class="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-ink-950 antialiased">
+  <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
     <div class="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-      <header class="mb-10 text-center sm:text-left">
-        <p class="text-sm font-medium text-slate-500">병원 검색</p>
-        <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-          요양기관번호 검색기
-        </h1>
+      <header class="mb-10">
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900">병의원 통합 검색기</h1>
+        <p class="mt-2 text-slate-500">요양기관번호와 사업자 정보를 한 번에 확인하세요.</p>
       </header>
 
-      <div
-        class="rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-lg shadow-slate-200/50 backdrop-blur sm:p-8"
-      >
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/50 sm:p-8">
         <form id="search-form" class="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div class="w-full sm:w-40">
             <label for="sido" class="mb-1.5 block text-sm font-medium text-slate-700">지역</label>
-            <select id="sido" name="sido" class="w-full rounded-xl border border-slate-200 bg-mist px-3 py-3 text-slate-900 outline-none transition focus:border-accent focus:bg-white focus:ring-4 focus:ring-accent/20">
+            <select id="sido" name="sido" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:ring-2 focus:ring-accent/20 transition">
               <option value="">전체 지역</option>
               <option value="110000">서울</option>
               <option value="310000">경기</option>
@@ -68,196 +61,146 @@
 
           <div class="min-w-0 flex-1">
             <label for="q" class="mb-1.5 block text-sm font-medium text-slate-700">병원명</label>
-            <input
-              id="q"
-              name="q"
-              type="search"
-              autocomplete="off"
-              placeholder="예: 삼성서울, 서울대학교병원"
-              class="w-full rounded-xl border border-slate-200 bg-mist px-4 py-3 text-slate-900 placeholder:text-slate-400 outline-none ring-accent/20 transition focus:border-accent focus:bg-white focus:ring-4"
-            />
+            <input id="q" name="q" type="search" placeholder="병원명을 입력하세요" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:ring-2 focus:ring-accent/20 transition" />
           </div>
-          <button
-            type="submit"
-            class="inline-flex shrink-0 items-center justify-center rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white shadow-md shadow-blue-500/25 transition hover:bg-blue-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-accent/30 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            검색
-          </button>
+          <button type="submit" class="rounded-xl bg-accent px-8 py-3 font-semibold text-white shadow-lg shadow-accent/20 hover:bg-blue-600 transition">검색</button>
         </form>
-        <div class="mt-4 flex flex-wrap items-center gap-3">
-          <label class="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-700">
-            <input
-              id="resolve-hira"
-              type="checkbox"
-              checked
-              class="size-4 rounded border-slate-300 text-accent focus:ring-accent"
-            />
-            요양기호 자동 조회 (최대 30건)
+
+        <div class="mt-4 flex items-center gap-3">
+          <label class="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+            <input id="resolve-hira" type="checkbox" checked class="size-4 rounded border-slate-300 text-accent focus:ring-accent" />
+            요양기호 자동 조회 활성화
           </label>
         </div>
 
-        <div id="status" class="mt-4 hidden text-sm" role="status"></div>
-
-        <div
-          id="map-hint"
-          class="mt-4 hidden rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950"
-        ></div>
-
-        <div class="mt-8 overflow-hidden rounded-xl border border-slate-200">
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-              <thead class="bg-slate-50">
-                <tr>
-                  <th scope="col" class="px-4 py-3 font-semibold text-slate-700 sm:px-6">병원명</th>
-                  <th scope="col" class="px-4 py-3 font-semibold text-slate-700 sm:px-6">주소</th>
-                  <th scope="col" class="px-4 py-3 font-semibold text-slate-700 sm:px-6">요양기호</th>
-                </tr>
-              </thead>
-              <tbody id="tbody" class="divide-y divide-slate-100 bg-white"></tbody>
-            </table>
+        <div id="detail-card" class="mt-8 hidden rounded-2xl border border-blue-100 bg-blue-50/50 p-6 shadow-sm">
+          <div class="flex items-center justify-between border-b border-blue-100 pb-4 mb-4">
+            <h2 id="detail-name" class="text-2xl font-bold text-slate-900">병원명</h2>
+            <button onclick="closeDetail()" class="text-slate-400 hover:text-slate-600">닫기 ✕</button>
           </div>
-          <p id="empty" class="hidden px-6 py-12 text-center text-slate-500">검색 결과가 없습니다.</p>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="rounded-xl bg-white p-5 border border-slate-100 shadow-sm">
+              <h3 class="text-sm font-bold text-accent mb-3">🏥 심평원 정보</h3>
+              <p class="text-sm text-slate-500 mb-1">요양기관번호</p>
+              <p id="detail-ykiho" class="font-mono text-xl font-bold text-slate-900 mb-3">-</p>
+              <p class="text-sm text-slate-500 mb-1">주소</p>
+              <p id="detail-addr" class="text-sm font-medium text-slate-700">-</p>
+            </div>
+            <div class="rounded-xl bg-white p-5 border border-slate-100 shadow-sm">
+              <h3 class="text-sm font-bold text-bizno mb-3">📄 사업자 정보 (Bizno)</h3>
+              <div id="bizno-content">
+                <p class="text-sm text-slate-500 mb-1">사업자번호</p>
+                <p id="detail-bizno" class="font-mono text-xl font-bold text-slate-900 mb-3">검색 전</p>
+                <p class="text-sm text-slate-500 mb-1">대표자명</p>
+                <p id="detail-ceo" class="text-sm font-bold text-slate-900">-</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="status" class="mt-6 hidden text-sm font-medium"></div>
+
+        <div class="mt-6 overflow-hidden rounded-xl border border-slate-200">
+          <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-6 py-3 font-semibold text-slate-700">병원명</th>
+                <th class="px-6 py-3 font-semibold text-slate-700">주소</th>
+                <th class="px-6 py-3 font-semibold text-slate-700">요양기호</th>
+              </tr>
+            </thead>
+            <tbody id="tbody" class="divide-y divide-slate-100 bg-white"></tbody>
+          </table>
+          <p id="empty" class="hidden py-12 text-center text-slate-400">검색 결과가 없습니다.</p>
         </div>
       </div>
-
-      <footer class="mt-10 space-y-1 text-center text-xs text-slate-500 sm:text-left">
-        <p>출처: 건강보험심사평가원(공공데이터)</p>
-        <p class="text-slate-400">Thanks to 모밀</p>
-      </footer>
     </div>
 
     <script>
       const form = document.getElementById("search-form");
-      const input = document.getElementById("q");
       const tbody = document.getElementById("tbody");
-      const empty = document.getElementById("empty");
       const statusEl = document.getElementById("status");
-      const mapHintEl = document.getElementById("map-hint");
+      const detailCard = document.getElementById("detail-card");
 
       function setStatus(kind, message) {
         statusEl.classList.remove("hidden", "text-red-600", "text-emerald-700", "text-slate-600");
-        if (!message) {
-          statusEl.classList.add("hidden");
-          statusEl.textContent = "";
-          return;
-        }
+        if (!message) { statusEl.classList.add("hidden"); return; }
         statusEl.textContent = message;
-        if (kind === "error") statusEl.classList.add("text-red-600");
-        else if (kind === "ok") statusEl.classList.add("text-emerald-700");
-        else statusEl.classList.add("text-slate-600");
+        statusEl.classList.add(kind === "error" ? "text-red-600" : (kind === "ok" ? "text-emerald-700" : "text-slate-600"));
+        statusEl.classList.remove("hidden");
       }
 
-      function cell(className, text) {
-        const td = document.createElement("td");
-        td.className = className;
-        td.textContent = text == null || text === "" ? "—" : String(text);
-        return td;
-      }
+      async function showDetail(h) {
+        detailCard.classList.remove("hidden");
+        document.getElementById("detail-name").textContent = h.yadmNm;
+        document.getElementById("detail-addr").textContent = h.addr;
+        document.getElementById("detail-ykiho").textContent = h.yoyangNo8 || h.ykiho || "조회 중...";
+        
+        // 비즈노 데이터 초기화
+        document.getElementById("detail-bizno").textContent = "검색 중...";
+        document.getElementById("detail-ceo").textContent = "조회 중...";
 
-      function yoyang8Cell(value) {
-        const td = document.createElement("td");
-        td.className =
-          "whitespace-nowrap px-4 py-3 font-mono text-sm font-medium tracking-wide text-slate-900 sm:px-6";
-        const v = value == null || value === "" ? "—" : String(value);
-        td.textContent = v;
-        td.title = v !== "—" ? v : "";
-        return td;
-      }
-
-      function renderRows(hospitals) {
-        tbody.replaceChildren();
-        if (!hospitals.length) {
-          empty.classList.remove("hidden");
-          return;
+        try {
+          const res = await fetch(`/api/bizno?q=${encodeURIComponent(h.yadmNm)}`);
+          const data = await res.json();
+          if (data.items && data.items.length > 0) {
+            // 주소 기반 매칭 (두 번째 단어 비교)
+            const cityKeyword = h.addr.split(" ")[1] || "";
+            let match = data.items[0];
+            for (const item of data.items) {
+              if (item.address && item.address.includes(cityKeyword)) { match = item; break; }
+            }
+            document.getElementById("detail-bizno").textContent = match.bno;
+            document.getElementById("detail-ceo").textContent = match.ceo;
+          } else {
+            document.getElementById("detail-bizno").textContent = "정보 없음";
+            document.getElementById("detail-ceo").textContent = "-";
+          }
+        } catch {
+          document.getElementById("detail-bizno").textContent = "에러 발생";
         }
-        empty.classList.add("hidden");
-        hospitals.forEach((h, i) => {
-          const tr = document.createElement("tr");
-          tr.className = i % 2 === 0 ? "bg-white" : "bg-slate-50/60";
-          tr.appendChild(
-            cell("px-4 py-3 font-medium text-slate-900 sm:px-6", h.yadmNm)
-          );
-          tr.appendChild(
-            cell("max-w-md px-4 py-3 text-slate-600 sm:px-6", h.addr)
-          );
-          tr.appendChild(yoyang8Cell(h.yoyangNo8));
-          tbody.appendChild(tr);
-        });
+        detailCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+
+      function closeDetail() { detailCard.classList.add("hidden"); }
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const q = input.value.trim();
-        const sido = document.getElementById("sido").value; // 지역 드롭다운 값 가져오기
-
-        if (!q) {
-          setStatus("error", "병원명을 입력해 주세요.");
-          return;
-        }
+        const q = document.getElementById("q").value.trim();
+        const sido = document.getElementById("sido").value;
         const resolveHira = document.getElementById("resolve-hira").checked;
-        setStatus(
-          "neutral",
-          resolveHira ? "검색 후 요양기호를 불러오는 중…" : "검색 중…"
-        );
+
+        if (!q) { setStatus("error", "검색어를 입력하세요."); return; }
+
+        setStatus("neutral", "데이터를 불러오는 중...");
         tbody.innerHTML = "";
-        empty.classList.add("hidden");
-        mapHintEl.classList.add("hidden");
-        mapHintEl.textContent = "";
         
         try {
-          const params = new URLSearchParams({ q });
-          
-          if (sido) {
-            params.set("sido", sido); // 선택된 지역 코드가 있다면 파라미터에 추가
-          }
-          
-          if (resolveHira) {
-            params.set("resolveHira", "1");
-            params.set("resolveLimit", "30");
-          }
-          const res = await fetch("/api/hospitals?" + params.toString());
-          let data;
-          try {
-            data = await res.json();
-          } catch {
-            setStatus("error", "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
-            tbody.innerHTML = "";
-            empty.classList.add("hidden");
+          const params = new URLSearchParams({ q, sido, resolveHira: resolveHira ? "1" : "0" });
+          const res = await fetch(`/api/hospitals?${params.toString()}`);
+          const data = await res.json();
+
+          if (!data.hospitals || data.hospitals.length === 0) {
+            document.getElementById("empty").classList.remove("hidden");
+            setStatus("ok", "검색 결과가 없습니다.");
             return;
           }
-          if (!res.ok) {
-            setStatus("error", data.error || "요청에 실패했습니다.");
-            tbody.innerHTML = "";
-            empty.classList.add("hidden");
-            return;
-          }
-          const hospitals = data.hospitals || [];
-          const total = data.totalCount != null ? ` (총 ${data.totalCount}건 중 상위 ${hospitals.length}건)` : "";
-          let okMsg = hospitals.length ? `결과 ${hospitals.length}건${total}` : "검색 결과가 없습니다.";
-          if (data.hiraResolveEnabled && hospitals.length) {
-            okMsg +=
-              " · 요양기호 " + (data.hiraResolveOk ?? 0) + "/" + (data.hiraResolveAttempted ?? 0) + "건";
-          }
-          setStatus("ok", okMsg);
-          const hints = [];
-          if (data.hiraResolveEnabled && hospitals.length && (data.hiraResolveOk ?? 0) < (data.hiraResolveAttempted ?? 0)) {
-            hints.push("일부 요양기호를 가져오지 못했습니다. 잠시 후 다시 검색해 보세요.");
-          }
-          if (data.yoyang8MapLoaded && data.yoyang8MapEntryCount > 0) {
-            hints.push("등록된 추가 번호가 반영되었습니다.");
-          }
-          if (hints.length) {
-            mapHintEl.innerHTML = hints.map((h) => "<p class=\"mb-1 last:mb-0\">" + h + "</p>").join("");
-            mapHintEl.classList.remove("hidden");
-          } else {
-            mapHintEl.classList.add("hidden");
-            mapHintEl.textContent = "";
-          }
-          renderRows(hospitals);
+
+          document.getElementById("empty").classList.add("hidden");
+          data.hospitals.forEach((h) => {
+            const tr = document.createElement("tr");
+            tr.className = "cursor-pointer hover:bg-slate-50 transition";
+            tr.onclick = () => showDetail(h);
+            tr.innerHTML = `
+              <td class="px-6 py-4 font-medium text-slate-900">${h.yadmNm}</td>
+              <td class="px-6 py-4 text-slate-500">${h.addr}</td>
+              <td class="px-6 py-4 font-mono text-accent font-bold">${h.yoyangNo8 || '—'}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+          setStatus("ok", `총 ${data.hospitals.length}건을 찾았습니다. 병원을 클릭해 상세 정보를 확인하세요.`);
         } catch {
-          setStatus("error", "네트워크 오류가 발생했습니다.");
-          tbody.innerHTML = "";
-          empty.classList.add("hidden");
+          setStatus("error", "데이터 조회 중 오류가 발생했습니다.");
         }
       });
     </script>
