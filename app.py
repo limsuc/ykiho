@@ -198,6 +198,8 @@ def index():
 @app.get("/api/hospitals")
 def api_hospitals():
     q = (request.args.get("q") or "").strip()
+    sido_code = (request.args.get("sido") or "").strip() # 지역 코드 변수 추가
+
     if not q:
         return jsonify({"error": "검색어(q)를 입력해 주세요.", "hospitals": []}), 400
 
@@ -219,6 +221,10 @@ def api_hospitals():
         "yadmNm": q,
         "_type": "json",
     }
+
+    # 지역 코드가 선택되었다면 파라미터에 추가
+    if sido_code:
+        params["sidoCd"] = sido_code
 
     try:
         resp = requests.get(HOSP_LIST_URL, params=params, timeout=30)
