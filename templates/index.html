@@ -137,12 +137,24 @@
         document.getElementById("detail-ykiho").textContent = h.yoyangNo8 || h.ykiho || "조회 중...";
         
         // 비즈노 데이터 초기화
-        document.getElementById("detail-bizno").textContent = "검색 중...";
-        document.getElementById("detail-ceo").textContent = "조회 중...";
+        document.getElementById("detail-bizno").textContent = "검색 중 ⏳";
+        document.getElementById("detail-ceo").textContent = "조회 중 ⏳";
 
         try {
           const res = await fetch(`/api/bizno?q=${encodeURIComponent(h.yadmNm)}`);
+          
+          // 1. 서버 주소가 아예 없을 때 (Vercel 배포 문제)
+          if (res.status === 404) {
+            throw new Error("app.py가 Vercel에 제대로 업데이트되지 않았습니다. (404 에러)");
+          }
+
           const data = await res.json();
+          
+          // 2. 파이썬에서 에러 메시지를 보냈을 때
+          if (data.error) {
+            throw new Error(data.error);
+          }
+
           if (data.items && data.items.length > 0) {
             // 주소 기반 매칭 (두 번째 단어 비교)
             const cityKeyword = h.addr.split(" ")[1] || "";
@@ -156,53 +168,16 @@
             document.getElementById("detail-bizno").textContent = "정보 없음";
             document.getElementById("detail-ceo").textContent = "-";
           }
-        } catch {
+        } catch (error) {
+          console.error("비즈노 에러:", error);
           document.getElementById("detail-bizno").textContent = "에러 발생";
+          document.getElementById("detail-ceo").textContent = "에러 발생";
+          
+          // 🚨 에러의 진짜 이유를 화면 상단 팝업창으로 띄워줍니다!
+          alert("사업자 정보 연동 실패 이유:\n" + error.message);
         }
         detailCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-
-      function closeDetail() { detailCard.classList.add("hidden"); }
-
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const q = document.getElementById("q").value.trim();
-        const sido = document.getElementById("sido").value;
-        const resolveHira = document.getElementById("resolve-hira").checked;
-
-        if (!q) { setStatus("error", "검색어를 입력하세요."); return; }
-
-        setStatus("neutral", "데이터를 불러오는 중...");
-        tbody.innerHTML = "";
-        
-        try {
-          const params = new URLSearchParams({ q, sido, resolveHira: resolveHira ? "1" : "0" });
-          const res = await fetch(`/api/hospitals?${params.toString()}`);
-          const data = await res.json();
-
-          if (!data.hospitals || data.hospitals.length === 0) {
-            document.getElementById("empty").classList.remove("hidden");
-            setStatus("ok", "검색 결과가 없습니다.");
-            return;
-          }
-
-          document.getElementById("empty").classList.add("hidden");
-          data.hospitals.forEach((h) => {
-            const tr = document.createElement("tr");
-            tr.className = "cursor-pointer hover:bg-slate-50 transition";
-            tr.onclick = () => showDetail(h);
-            tr.innerHTML = `
-              <td class="px-6 py-4 font-medium text-slate-900">${h.yadmNm}</td>
-              <td class="px-6 py-4 text-slate-500">${h.addr}</td>
-              <td class="px-6 py-4 font-mono text-accent font-bold">${h.yoyangNo8 || '—'}</td>
-            `;
-            tbody.appendChild(tr);
-          });
-          setStatus("ok", `총 ${data.hospitals.length}건을 찾았습니다. 병원을 클릭해 상세 정보를 확인하세요.`);
-        } catch {
-          setStatus("error", "데이터 조회 중 오류가 발생했습니다.");
-        }
-      });
     </script>
   </body>
 </html>
