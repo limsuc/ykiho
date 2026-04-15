@@ -111,6 +111,7 @@
       const statusEl = document.getElementById("status");
       const detailCard = document.getElementById("detail-card");
 
+      // 상태 메시지 출력 함수
       function setStatus(kind, message) {
         statusEl.className = `mt-6 text-sm font-medium p-3 rounded-lg ${
           kind === "error" ? "bg-red-50 text-red-600" : (kind === "ok" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600")
@@ -119,6 +120,7 @@
         statusEl.classList.remove("hidden");
       }
 
+      // 비즈노 상세 정보 표시 함수
       async function showDetail(h) {
         detailCard.classList.remove("hidden");
         document.getElementById("detail-name").textContent = h.yadmNm;
@@ -153,7 +155,7 @@
             // 3. 화면에 사업자번호 출력
             biznoEl.textContent = match.bno || "정보 없음";
             
-            // 4. 대표자명이 안 오기 때문에, '영업상태(계속사업자)'를 대신 출력하여 실무 활용도 극대화
+            // 4. 대표자명 대신 '영업상태(계속사업자)'를 출력
             const status = match.bstt || "상태 모름";
             const taxType = match.taxtype ? match.taxtype.split(" ")[0] : ""; 
             ceoEl.textContent = `비즈노 미제공 (${status})`;
@@ -172,6 +174,57 @@
         }
         
         detailCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function closeDetail() { detailCard.classList.add("hidden"); }
+
+      // 🚨 이 부분이 지워져서 새로고침이 되었던 것입니다! (검색 버튼 동작)
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault(); // 기본 새로고침 방지
+        
+        const q = document.getElementById("q").value.trim();
+        const sido = document.getElementById("sido").value;
+        const resolveHira = document.getElementById("resolve-hira").checked ? "1" : "0";
+
+        if (!q) { setStatus("error", "검색어를 입력하세요."); return; }
+
+        setStatus("neutral", "데이터를 불러오는 중...");
+        tbody.innerHTML = "";
+        document.getElementById("empty").classList.add("hidden");
+        detailCard.classList.add("hidden");
+        
+        try {
+          const params = new URLSearchParams({ q, sido, resolveHira });
+          const res = await fetch(`/api/hospitals?${params.toString()}`);
+          const data = await res.json();
+
+          if (data.error) {
+            setStatus("error", `서버 오류: ${data.error}`);
+            return;
+          }
+
+          if (!data.hospitals || data.hospitals.length === 0) {
+            document.getElementById("empty").classList.remove("hidden");
+            setStatus("ok", "검색 결과가 없습니다.");
+            return;
+          }
+
+          data.hospitals.forEach((h) => {
+            const tr = document.createElement("tr");
+            tr.className = "cursor-pointer hover:bg-slate-50 transition";
+            tr.onclick = () => showDetail(h);
+            tr.innerHTML = `
+              <td class="px-6 py-4 font-medium text-slate-900">${h.yadmNm}</td>
+              <td class="px-6 py-4 text-slate-500">${h.addr}</td>
+              <td class="px-6 py-4 font-mono text-accent font-bold">${h.yoyangNo8 || h.ykiho || '—'}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+          setStatus("ok", `총 ${data.hospitals.length}건을 찾았습니다. 병원을 클릭해 상세 정보를 확인하세요.`);
+        } catch (err) {
+          setStatus("error", "데이터 조회 중 네트워크 오류가 발생했습니다.");
+          console.error(err);
+        }
       });
     </script>
   </body>
